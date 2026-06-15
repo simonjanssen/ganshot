@@ -6,6 +6,8 @@ on:
     paths:
       - 'Cargo.toml'
       - 'Cargo.lock'
+      - '.cargo/audit.toml'
+      - '.cargo/deny.toml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
