@@ -1,7 +1,13 @@
 #![recursion_limit = "256"]
 
-use burn::{backend::{Autodiff, Wgpu}, optim::AdamConfig};
-use ganshot::{model::ModelConfig, training::{TrainingConfig, train}};
+use burn::{
+    backend::{Autodiff, Wgpu},
+    optim::AdamConfig,
+};
+use ganshot::{
+    model::ModelConfig,
+    training::{TrainingConfig, train},
+};
 
 fn main() {
     type MyBackend = Wgpu<f32, i32>;
@@ -18,5 +24,4 @@ fn main() {
         TrainingConfig::new(ModelConfig::new(10, 512), AdamConfig::new()),
         device.clone(),
     );
-
 }

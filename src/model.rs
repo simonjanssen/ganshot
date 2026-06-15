@@ -12,7 +12,6 @@ use burn::{
 
 use crate::data::MnistBatch;
 
-
 #[derive(Module, Debug)]
 pub struct Model<B: Backend> {
     conv1: Conv2d<B>,
