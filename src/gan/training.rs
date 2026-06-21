@@ -109,37 +109,36 @@ pub fn run<B: AutodiffBackend>(device: B::Device) -> Result<(), Error> {
         let (mut sum_g, mut n_g) = (0.0_f32, 0u32);
         let (mut sum_d, mut n_d) = (0.0_f32, 0u32);
 
-        for (iteration, real_batch) in dataloader.iter().enumerate() {
-            // Forward passes
-            //println!("Running generator forward pass..");
-            let z = sample_z([real_batch.points.dims()[0], z_dim], &mut rng, &device);
-            let fake_batch = generator.forward(z);
+        for real_batch in dataloader.iter() {
+            let real = real_batch.points;
+            let batch_size = real.dims()[0];
 
-            //println!("Running discriminator forward passes..");
-            let d_scores_on_real = discriminator.forward(real_batch.points);
-            let d_scores_on_fake = discriminator.forward(fake_batch);
+            // --- Train discriminator on the full batch ---
+            // The fake samples are detached so the discriminator update does not
+            // backprop into (or modify) the generator.
+            let z = sample_z([batch_size, z_dim], &mut rng, &device);
+            let fake = generator.forward(z);
+            let d_on_real = discriminator.forward(real);
+            let d_on_fake = discriminator.forward(fake.clone().detach());
+            let loss_d = -d_on_fake.neg().add_scalar(1.0).log().mean() - d_on_real.log().mean();
+            sum_d += loss_d.clone().into_scalar().to_f32();
+            n_d += 1;
 
-            //println!("Running backward passes..");
-            if iteration.is_multiple_of(2) {
-                // Non-saturating generator loss: minimize -log(D(fake)) instead of
-                // log(1 - D(fake)), which provides stronger gradients early in training.
-                let loss = -d_scores_on_fake.log().mean();
-                sum_g += loss.clone().into_scalar().to_f32();
-                n_g += 1;
+            let grads = loss_d.backward();
+            let grads: GradientsParams = GradientsParams::from_grads(grads, &discriminator);
+            discriminator = optim_d.step(config.lr, discriminator, grads);
 
-                let grads = loss.backward();
-                let grads: GradientsParams = GradientsParams::from_grads(grads, &generator);
-                generator = optim_g.step(config.lr, generator, grads);
-            } else {
-                let loss = -d_scores_on_fake.neg().add_scalar(1.0).log().mean()
-                    - d_scores_on_real.log().mean();
-                sum_d += loss.clone().into_scalar().to_f32();
-                n_d += 1;
+            // --- Train generator against the just-updated discriminator ---
+            // Non-saturating generator loss: minimize -log(D(fake)) instead of
+            // log(1 - D(fake)), which provides stronger gradients early in training.
+            let d_on_fake = discriminator.forward(fake);
+            let loss_g = -d_on_fake.log().mean();
+            sum_g += loss_g.clone().into_scalar().to_f32();
+            n_g += 1;
 
-                let grads = loss.backward();
-                let grads: GradientsParams = GradientsParams::from_grads(grads, &discriminator);
-                discriminator = optim_d.step(config.lr, discriminator, grads);
-            }
+            let grads = loss_g.backward();
+            let grads: GradientsParams = GradientsParams::from_grads(grads, &generator);
+            generator = optim_g.step(config.lr, generator, grads);
         }
 
         let avg_loss_g = sum_g / n_g.max(1) as f32;
