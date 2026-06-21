@@ -1,29 +1,19 @@
-use std::sync::Once;
-
 use burn::{
     Tensor,
-    backend::{Autodiff, Wgpu, wgpu::WgpuDevice},
+    backend::{Autodiff, Wgpu},
     data::{dataloader::DataLoaderBuilder, dataset::Dataset},
     tensor::Shape,
 };
-use ganshot::gan::{
-    data::{TripletBatch, TripletBatcher, TripletDataset, sample_z},
-    model::{DiscriminatorConfig, GeneratorConfig},
+use ganshot::{
+    backend::init_backend,
+    gan::{
+        data::{TripletBatch, TripletBatcher, TripletDataset, sample_z},
+        model::{DiscriminatorConfig, GeneratorConfig},
+    },
 };
 
 type MyBackend = Wgpu<f32, i32>;
 type MyAutodiffBackend = Autodiff<MyBackend>;
-
-static INIT_BACKEND: Once = Once::new();
-
-fn init_backend(device: &WgpuDevice) {
-    INIT_BACKEND.call_once(|| {
-        burn::backend::wgpu::init_setup::<burn::backend::wgpu::graphics::Metal>(
-            device,
-            Default::default(),
-        );
-    });
-}
 
 #[test]
 fn generator_forward_pass() {

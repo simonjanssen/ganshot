@@ -1,16 +1,13 @@
 use anyhow::Error;
-use burn::backend::{Autodiff, Wgpu};
-use ganshot::gan::training;
+use ganshot::{
+    backend::{MyAutodiffBackend, init_backend},
+    gan::training,
+};
 
 fn main() -> Result<(), Error> {
-    type MyBackend = Wgpu<f32, i32>;
-    type MyAutodiffBackend = Autodiff<MyBackend>;
-
     let device = Default::default();
-    burn::backend::wgpu::init_setup::<burn::backend::wgpu::graphics::Metal>(
-        &device,
-        Default::default(),
-    );
+    init_backend(&device);
+
     training::run::<MyAutodiffBackend>(device)?;
     Ok(())
 }

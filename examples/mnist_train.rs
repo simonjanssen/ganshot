@@ -1,11 +1,7 @@
-#![recursion_limit = "256"]
-
-use burn::{
-    backend::{Autodiff, Wgpu},
-    optim::AdamConfig,
-};
+use burn::optim::AdamConfig;
 use ganshot::{
     ARTIFACT_DIR,
+    backend::{MyAutodiffBackend, init_backend},
     mnist::{
         model::ModelConfig,
         training::{TrainingConfig, train},
@@ -13,14 +9,9 @@ use ganshot::{
 };
 
 fn main() {
-    type MyBackend = Wgpu<f32, i32>;
-    type MyAutodiffBackend = Autodiff<MyBackend>;
-
     let device = Default::default();
-    burn::backend::wgpu::init_setup::<burn::backend::wgpu::graphics::Metal>(
-        &device,
-        Default::default(),
-    );
+    init_backend(&device);
+
     train::<MyAutodiffBackend>(
         ARTIFACT_DIR,
         TrainingConfig::new(ModelConfig::new(10, 512), AdamConfig::new()),
