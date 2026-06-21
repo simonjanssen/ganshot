@@ -19,7 +19,7 @@ static INIT_BACKEND: Once = Once::new();
 fn init_backend(device: &WgpuDevice) {
     INIT_BACKEND.call_once(|| {
         burn::backend::wgpu::init_setup::<burn::backend::wgpu::graphics::Metal>(
-            &device,
+            device,
             Default::default(),
         );
     });
