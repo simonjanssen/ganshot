@@ -1,0 +1,87 @@
+use std::sync::Once;
+
+use burn::{
+    Tensor,
+    backend::{Autodiff, Wgpu, wgpu::WgpuDevice},
+    data::{dataloader::DataLoaderBuilder, dataset::Dataset},
+    tensor::Shape,
+};
+use ganshot::gan::{
+    data::{TripletBatch, TripletBatcher, TripletDataset, sample_z},
+    model::{DiscriminatorConfig, GeneratorConfig},
+};
+
+type MyBackend = Wgpu<f32, i32>;
+type MyAutodiffBackend = Autodiff<MyBackend>;
+
+static INIT_BACKEND: Once = Once::new();
+
+fn init_backend(device: &WgpuDevice) {
+    INIT_BACKEND.call_once(|| {
+        burn::backend::wgpu::init_setup::<burn::backend::wgpu::graphics::Metal>(
+            &device,
+            Default::default(),
+        );
+    });
+}
+
+#[test]
+fn generator_forward_pass() {
+    let device = Default::default();
+    init_backend(&device);
+
+    let (z_dim, nb_hidden, batch_size) = (8, 100, 64);
+    let config = GeneratorConfig::new(z_dim, nb_hidden);
+    let generator = config.init::<MyAutodiffBackend>(&device);
+
+    let mut rng = rand::rng();
+    let z = sample_z([batch_size, z_dim], &mut rng, &device);
+
+    let output = generator.forward(z);
+    assert_eq!(output.shape(), Shape::new([batch_size, 2]));
+}
+
+#[test]
+fn discriminator_forward_pass() {
+    let device = Default::default();
+    init_backend(&device);
+
+    let (nb_hidden, batch_size) = (100, 64);
+    let config = DiscriminatorConfig::new(nb_hidden);
+    let discriminator = config.init::<MyAutodiffBackend>(&device);
+
+    let x = Tensor::empty([batch_size, 2], &device);
+    let output = discriminator.forward(x);
+    assert_eq!(output.shape(), Shape::new([batch_size, 1]));
+}
+
+#[test]
+fn load_dataset() {
+    let dataset = TripletDataset::train();
+    assert_eq!(dataset.len(), 10000);
+
+    let item = dataset.get(42);
+    assert!(item.is_some());
+}
+
+#[test]
+fn iterate_batches() {
+    let device = Default::default();
+    init_backend(&device);
+
+    let (batch_size, seed, num_workers) = (64, 42, 4);
+    let batcher = TripletBatcher::default();
+    let dataset = TripletDataset::train();
+
+    let dataloader = DataLoaderBuilder::new(batcher)
+        .batch_size(batch_size)
+        .shuffle(seed)
+        .num_workers(num_workers)
+        .build(dataset);
+
+    let batch: Option<TripletBatch<Wgpu>> = dataloader.iter().next();
+    assert!(batch.is_some());
+
+    let batch = batch.unwrap();
+    assert_eq!(batch.points.shape(), Shape::new([batch_size, 2]));
+}

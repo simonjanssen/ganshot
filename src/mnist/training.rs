@@ -11,7 +11,7 @@ use burn::{
     },
 };
 
-use crate::{data::MnistBatcher, model::ModelConfig};
+use crate::{mnist::data::MnistBatcher, mnist::model::ModelConfig};
 
 #[derive(Config, Debug)]
 pub struct TrainingConfig {

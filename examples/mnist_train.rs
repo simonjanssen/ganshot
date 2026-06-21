@@ -5,8 +5,11 @@ use burn::{
     optim::AdamConfig,
 };
 use ganshot::{
-    model::ModelConfig,
-    training::{TrainingConfig, train},
+    ARTIFACT_DIR,
+    mnist::{
+        model::ModelConfig,
+        training::{TrainingConfig, train},
+    },
 };
 
 fn main() {
@@ -18,9 +21,8 @@ fn main() {
         &device,
         Default::default(),
     );
-    let artifact_dir = "./tmp/";
     train::<MyAutodiffBackend>(
-        artifact_dir,
+        ARTIFACT_DIR,
         TrainingConfig::new(ModelConfig::new(10, 512), AdamConfig::new()),
         device.clone(),
     );

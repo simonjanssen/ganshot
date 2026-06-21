@@ -1,5 +1,5 @@
 use burn::{backend::Wgpu, data::dataset::Dataset};
-use ganshot::inference::infer;
+use ganshot::{ARTIFACT_DIR, mnist::inference::infer};
 
 fn main() {
     type MyBackend = Wgpu<f32, i32>;
@@ -8,10 +8,9 @@ fn main() {
         &device,
         Default::default(),
     );
-    let artifact_dir = "./tmp/";
 
     infer::<MyBackend>(
-        artifact_dir,
+        ARTIFACT_DIR,
         device,
         burn::data::dataset::vision::MnistDataset::test()
             .get(42)

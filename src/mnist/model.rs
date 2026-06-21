@@ -10,7 +10,7 @@ use burn::{
     train::{ClassificationOutput, InferenceStep, TrainOutput, TrainStep},
 };
 
-use crate::data::MnistBatch;
+use crate::mnist::data::MnistBatch;
 
 #[derive(Module, Debug)]
 pub struct Model<B: Backend> {
