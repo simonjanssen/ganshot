@@ -1,15 +1,12 @@
 use burn::{
     Tensor,
-    backend::{Autodiff, Wgpu},
+    backend::{Autodiff, Wgpu, wgpu::WgpuDevice},
     data::{dataloader::DataLoaderBuilder, dataset::Dataset},
     tensor::Shape,
 };
-use ganshot::{
-    backend::init_backend,
-    gan::{
-        data::{TripletBatch, TripletBatcher, TripletDataset, sample_z},
-        model::{DiscriminatorConfig, GeneratorConfig},
-    },
+use ganshot::gan::{
+    data::{TripletBatch, TripletBatcher, TripletDataset, sample_z},
+    model::{DiscriminatorConfig, GeneratorConfig},
 };
 
 type MyBackend = Wgpu<f32, i32>;
@@ -17,8 +14,7 @@ type MyAutodiffBackend = Autodiff<MyBackend>;
 
 #[test]
 fn generator_forward_pass() {
-    let device = Default::default();
-    init_backend(&device);
+    let device = WgpuDevice::default();
 
     let (z_dim, nb_hidden, batch_size) = (8, 100, 64);
     let config = GeneratorConfig::new(z_dim, nb_hidden);
@@ -33,8 +29,7 @@ fn generator_forward_pass() {
 
 #[test]
 fn discriminator_forward_pass() {
-    let device = Default::default();
-    init_backend(&device);
+    let device = WgpuDevice::default();
 
     let (nb_hidden, batch_size) = (100, 64);
     let config = DiscriminatorConfig::new(nb_hidden);
@@ -56,9 +51,6 @@ fn load_dataset() {
 
 #[test]
 fn iterate_batches() {
-    let device = Default::default();
-    init_backend(&device);
-
     let (batch_size, seed, num_workers) = (64, 42, 4);
     let batcher = TripletBatcher::default();
     let dataset = TripletDataset::train();

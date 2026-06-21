@@ -1,7 +1,7 @@
-use burn::optim::AdamConfig;
+use burn::{backend::wgpu::WgpuDevice, optim::AdamConfig};
 use ganshot::{
     ARTIFACT_DIR,
-    backend::{MyAutodiffBackend, init_backend},
+    backend::MyAutodiffBackend,
     mnist::{
         model::ModelConfig,
         training::{TrainingConfig, train},
@@ -9,8 +9,7 @@ use ganshot::{
 };
 
 fn main() {
-    let device = Default::default();
-    init_backend(&device);
+    let device = WgpuDevice::default();
 
     train::<MyAutodiffBackend>(
         ARTIFACT_DIR,
