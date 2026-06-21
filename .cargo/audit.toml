@@ -2,4 +2,9 @@
 # See https://docs.rs/cargo-audit/latest/cargo_audit/config/index.html
 
 [advisories]
-ignore = []
+ignore = [
+    # bincode is unmaintained (transitive dependency via burn)
+    "RUSTSEC-2025-0141",
+    # paste is no longer maintained (transitive dependency via burn/cubecl)
+    "RUSTSEC-2024-0436",
+]
