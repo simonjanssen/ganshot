@@ -1,19 +1,16 @@
 use burn::{
     Tensor,
-    backend::{Autodiff, Wgpu},
+    backend::Wgpu,
     data::{dataloader::DataLoaderBuilder, dataset::Dataset},
     tensor::Shape,
 };
 use ganshot::{
-    backend::select_device,
+    backend::{MyAutodiffBackend, select_device},
     gan::{
         data::{TripletBatch, TripletBatcher, TripletDataset, sample_z},
         model::{DiscriminatorConfig, GeneratorConfig},
     },
 };
-
-type MyBackend = Wgpu<f32, i32>;
-type MyAutodiffBackend = Autodiff<MyBackend>;
 
 #[test]
 fn generator_forward_pass() {
