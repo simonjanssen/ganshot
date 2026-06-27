@@ -1,8 +1,12 @@
-use burn::{backend::wgpu::WgpuDevice, data::dataset::Dataset};
-use ganshot::{ARTIFACT_DIR, backend::MyBackend, mnist::inference::infer};
+use burn::data::dataset::Dataset;
+use ganshot::{
+    ARTIFACT_DIR,
+    backend::{MyBackend, select_device},
+    mnist::inference::infer,
+};
 
 fn main() {
-    let device = WgpuDevice::default();
+    let device = select_device();
 
     infer::<MyBackend>(
         ARTIFACT_DIR,
