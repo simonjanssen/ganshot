@@ -12,4 +12,8 @@ plotly = "0.14.1"
 rand = "0.10.1"
 rand_distr = "0.6.0"
 
+# cargo audit findings
+memmap2 = "0.9.11"
+quinn-proto = "0.11.15"
+
 [dev-dependencies]
