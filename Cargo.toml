@@ -2,6 +2,18 @@
 name = "ganshot"
 version = "0.1.0"
 edition = "2024"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
-burn = { version = "0.21.0", features = ["dataset", "fusion", "metal", "train", "tui", "vision", "wgpu"] }
+anyhow = "1.0.102"
+burn = { version = "0.21.0", features = ["dataset", "fusion", "metal", "train", "tui", "vision", "wgpu", "flex" ] }
+getrandom = { version = "0.4.3" }
+plotly = "0.14.1"
+rand = "0.10.1"
+rand_distr = "0.6.0"
+
+# cargo audit findings
+memmap2 = "0.9.11"
+quinn-proto = "0.11.15"
+
+[dev-dependencies]
