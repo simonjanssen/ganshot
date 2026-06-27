@@ -1,3 +1,4 @@
+#[cfg(target_os = "macos")]
 use std::sync::Once;
 
 use burn::backend::Autodiff;
