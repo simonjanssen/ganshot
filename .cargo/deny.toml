@@ -1,21 +1,25 @@
 # Configuration for `cargo deny`. See https://embarkstudios.github.io/cargo-deny/
 #
-# This crate is published under MIT, so we only allow permissive licenses
-# (or weak file-level copyleft like MPL-2.0) in our dependency tree.
+# This crate is published under MIT OR Apache-2.0, so we only allow permissive
+# licenses (or weak file-level copyleft like MPL-2.0) in our dependency tree.
 
 [licenses]
 # SPDX identifiers of licenses we accept in dependencies.
 allow = [
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",        # av1-grain / rav1e (image AVIF encoder)
     "BSD-3-Clause",
+    "BSL-1.0",             # xxhash-rust (Boost Software License)
+    "CC0-1.0",             # hexf-parse (via naga/wgpu); public-domain dedication
     "CDLA-Permissive-2.0", # webpki-roots data license
     "ISC",
     "MIT",
     "MPL-2.0",             # weak file-level copyleft, fine when linking from MIT
+    "NCSA",                # libfuzzer-sys (rav1e fuzz target, never shipped)
     "Unicode-3.0",         # modern Unicode license, OSI-approved
     "Unlicense",           # public-domain dedication
-    "WTFPL",               # ffmpeg-next / ffmpeg-sys-next
+    "Zlib",                # foldhash (via hashbrown)
 ]
 # Threshold (0.0 - 1.0) for accepting a license file as matching its claimed
 # SPDX expression. 0.8 is the default; bump if false positives appear.
