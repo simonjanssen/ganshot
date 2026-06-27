@@ -1,11 +1,10 @@
 use burn::{
     Tensor,
-    backend::Wgpu,
     data::{dataloader::DataLoaderBuilder, dataset::Dataset},
     tensor::Shape,
 };
 use ganshot::{
-    backend::{MyAutodiffBackend, select_device},
+    backend::{MyAutodiffBackend, MyBackend, select_device},
     gan::{
         data::{TripletBatch, TripletBatcher, TripletDataset, sample_z},
         model::{DiscriminatorConfig, GeneratorConfig},
@@ -64,7 +63,7 @@ fn iterate_batches() {
         .set_device(device)
         .build(dataset);
 
-    let batch: Option<TripletBatch<Wgpu>> = dataloader.iter().next();
+    let batch: Option<TripletBatch<MyBackend>> = dataloader.iter().next();
     assert!(batch.is_some());
 
     let batch = batch.unwrap();
