@@ -1,12 +1,13 @@
 use anyhow::Error;
 use ganshot::{
     backend::{MyAutodiffBackend, select_device},
-    data::stars::RandomStars,
+    data::points::GaussianTriplet,
     training,
 };
 
 fn main() -> Result<(), Error> {
     let device = select_device();
-    training::runner::run::<MyAutodiffBackend, _, _>(device, RandomStars)?;
+    let sampler = GaussianTriplet::default();
+    training::runner::run::<MyAutodiffBackend, _, _>(device, sampler)?;
     Ok(())
 }

@@ -20,7 +20,7 @@ use crate::{
 
 #[derive(Config, Debug)]
 pub struct TrainingConfig {
-    #[config(default = 500)]
+    #[config(default = 100)]
     pub epochs: usize,
     #[config(default = 512)]
     pub batch_size: usize,
