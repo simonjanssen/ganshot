@@ -180,3 +180,96 @@ pub fn plot_distr(
     let path_plot = format!("{}/generator.html", ARTIFACT_DIR);
     plot.write_html(path_plot);
 }
+
+/// Plot generator outlines across epochs with a slider.
+///
+/// `outlines` is indexed as `outlines[epoch][outline]`, where each innermost
+/// `Vec` holds one outline's coordinates flattened as `(x1, y1, x2, y2, ...)`.
+/// Outlines with a single point (length 2) are drawn as markers only; longer
+/// outlines are drawn as connected lines with markers. A slider toggles which
+/// epoch's group of outlines is visible, mirroring [`plot_distr`].
+pub fn plot_outlines(epochs: Vec<usize>, outlines: Vec<Vec<Vec<f64>>>) {
+    let mut plot = Plot::new();
+    let n = epochs.len();
+
+    // Number of traces contributed by each epoch, used to build the global
+    // per-trace visibility array spanning every epoch for each slider step.
+    let counts: Vec<usize> = outlines.iter().map(Vec::len).collect();
+
+    // Add every epoch's outlines as individual traces; only the last epoch's
+    // group is visible initially.
+    for (i, epoch_outlines) in outlines.into_iter().enumerate() {
+        let is_last = i + 1 == n;
+        for outline in epoch_outlines {
+            let mut xs = Vec::with_capacity(outline.len() / 2);
+            let mut ys = Vec::with_capacity(outline.len() / 2);
+            for pair in outline.chunks_exact(2) {
+                xs.push(pair[0]);
+                ys.push(pair[1]);
+            }
+
+            // A single point can only be drawn as a marker; there is no line to draw.
+            let mode = if xs.len() <= 1 {
+                Mode::Markers
+            } else {
+                // Close the outline by repeating the first point so the edge
+                // between the last and first vertex is drawn.
+                xs.push(xs[0]);
+                ys.push(ys[0]);
+                Mode::Lines
+            };
+
+            let visible = if is_last {
+                Visible::True
+            } else {
+                Visible::False
+            };
+            let trace = Scatter::new(xs, ys)
+                .mode(mode)
+                .show_legend(false)
+                .visible(visible);
+            plot.add_trace(trace);
+        }
+    }
+
+    // Each slider step makes visible exactly the trace-group belonging to that
+    // epoch. The visibility array spans all traces in epoch order.
+    let steps: Vec<_> = epochs
+        .iter()
+        .enumerate()
+        .map(|(i, epoch)| {
+            let mut visible = Vec::with_capacity(counts.iter().sum());
+            for (j, &count) in counts.iter().enumerate() {
+                for _ in 0..count {
+                    visible.push(if j == i {
+                        Visible::True
+                    } else {
+                        Visible::False
+                    });
+                }
+            }
+            SliderStepBuilder::new()
+                .label(epoch.to_string())
+                .push_restyle(Scatter::<f64, f64>::modify_visible(visible))
+                .build()
+                .unwrap()
+        })
+        .collect();
+
+    let slider = Slider::new()
+        .active(n.max(1) as i32 - 1)
+        .current_value(SliderCurrentValue::new().prefix("Epoch: "))
+        .steps(steps);
+
+    let layout = Layout::new()
+        .show_legend(false)
+        .width(700)
+        .height(700)
+        .x_axis(Axis::new().title("x"))
+        .y_axis(Axis::new().title("y").scale_anchor("x").scale_ratio(1.0))
+        .sliders(vec![slider]);
+    plot.set_layout(layout);
+
+    let path_plot = format!("{}/generator_outlines.html", ARTIFACT_DIR);
+    plot.write_html(path_plot);
+}

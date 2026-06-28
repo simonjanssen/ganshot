@@ -4,7 +4,7 @@ use anyhow::Error;
 use burn::{
     config::Config,
     data::dataloader::DataLoaderBuilder,
-    module::Module,
+    module::{AutodiffModule, Module},
     optim::{AdamConfig, GradientsParams, Optimizer},
     record::CompactRecorder,
     tensor::{backend::AutodiffBackend, cast::ToElement},
@@ -17,7 +17,7 @@ use crate::{
         discriminator::DiscriminatorConfig,
         generator::{GeneratorConfig, sample_z},
     },
-    training::recorder::{ARTIFACT_DIR, create_artifact_dir, plot_loss},
+    training::recorder::{ARTIFACT_DIR, create_artifact_dir, plot_loss, plot_outlines},
 };
 
 #[derive(Config, Debug)]
@@ -76,8 +76,29 @@ pub fn run<B: AutodiffBackend, G: Geometry + 'static, D: Distribution<G>>(
     let mut log_loss_g = Vec::with_capacity(config.epochs);
     let mut log_loss_d = Vec::with_capacity(config.epochs);
 
+    let mut log_epochs_outlines = Vec::with_capacity(config.epochs);
+    let mut log_outlines = Vec::with_capacity(config.epochs);
+
+    let n_sample_valid = 5;
+
     println!("Starting training..");
     for epoch in 1..config.epochs + 1 {
+        if (epoch - 1).is_multiple_of(5) {
+            // sample from generator
+            let generator_valid = generator.valid();
+            let z_valid = sample_z([n_sample_valid, z_dim], &mut rng, &device);
+            let fake_valid = generator_valid.forward(z_valid);
+            let [_rows, cols] = fake_valid.dims();
+            let flat: Vec<f32> = fake_valid.into_data().to_vec().unwrap();
+            let outlines: Vec<Vec<f64>> = flat
+                .chunks_exact(cols)
+                .map(|row| row.iter().map(|&v| v as f64).collect())
+                .collect();
+            log_epochs_outlines.push(epoch - 1);
+            log_outlines.push(outlines);
+            plot_outlines(log_epochs_outlines.clone(), log_outlines.clone());
+        }
+
         let t = Instant::now();
         let (mut sum_g, mut n_g) = (0.0_f32, 0u32);
         let (mut sum_d, mut n_d) = (0.0_f32, 0u32);
