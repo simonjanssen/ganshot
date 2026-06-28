@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use anyhow::Error;
 use burn::{
     config::Config,
@@ -15,7 +17,7 @@ use crate::{
         discriminator::DiscriminatorConfig,
         generator::{GeneratorConfig, sample_z},
     },
-    training::recorder::{ARTIFACT_DIR, create_artifact_dir},
+    training::recorder::{ARTIFACT_DIR, create_artifact_dir, plot_loss},
 };
 
 #[derive(Config, Debug)]
@@ -70,8 +72,13 @@ pub fn run<B: AutodiffBackend, G: Geometry + 'static, D: Distribution<G>>(
         .set_device(device.clone())
         .build(dataset);
 
+    let mut log_epochs = Vec::with_capacity(config.epochs);
+    let mut log_loss_g = Vec::with_capacity(config.epochs);
+    let mut log_loss_d = Vec::with_capacity(config.epochs);
+
     println!("Starting training..");
     for epoch in 1..config.epochs + 1 {
+        let t = Instant::now();
         let (mut sum_g, mut n_g) = (0.0_f32, 0u32);
         let (mut sum_d, mut n_d) = (0.0_f32, 0u32);
 
@@ -109,10 +116,18 @@ pub fn run<B: AutodiffBackend, G: Geometry + 'static, D: Distribution<G>>(
 
         let avg_loss_g = sum_g / n_g.max(1) as f32;
         let avg_loss_d = sum_d / n_d.max(1) as f32;
+        let dt_train = t.elapsed();
+        let t = Instant::now();
+
+        log_epochs.push(epoch);
+        log_loss_g.push(avg_loss_g);
+        log_loss_d.push(avg_loss_d);
+        plot_loss(log_epochs.clone(), log_loss_g.clone(), log_loss_d.clone());
+        let dt_plot = t.elapsed();
 
         println!(
-            "[Train - Epoch {:>3}] avg_loss_g {:>8.3} | avg_loss_d {:>8.3}",
-            epoch, avg_loss_g, avg_loss_d,
+            "[Train - Epoch {:>3}] avg_loss_g {:>8.3} | avg_loss_d {:>8.3} | {:?} train | {:?} plot",
+            epoch, avg_loss_g, avg_loss_d, dt_train, dt_plot
         );
     }
 
