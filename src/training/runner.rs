@@ -1,59 +1,66 @@
-use anyhow::Error;
+use std::time::Instant;
+
 use burn::{
     config::Config,
-    data::{dataloader::DataLoaderBuilder, dataset::Dataset},
+    data::dataloader::DataLoaderBuilder,
     module::{AutodiffModule, Module},
     optim::{AdamConfig, GradientsParams, Optimizer},
     record::CompactRecorder,
     tensor::{backend::AutodiffBackend, cast::ToElement},
 };
+use rand_distr::Distribution;
 
 use crate::{
-    ARTIFACT_DIR,
-    gan::{
-        data::{TripletBatcher, TripletDataset, sample_z},
-        model::{DiscriminatorConfig, GeneratorConfig},
-        record::{plot_distr, plot_loss},
+    data::commons::{Batcher, Dataset, Geometry},
+    models::{
+        discriminator::DiscriminatorConfig,
+        generator::{GeneratorConfig, sample_z},
     },
+    training::recorder::{ARTIFACT_DIR, create_artifact_dir, plot_loss, plot_outlines},
 };
 
 #[derive(Config, Debug)]
 pub struct TrainingConfig {
-    #[config(default = 350)]
+    #[config(default = 250)]
     pub epochs: usize,
-    #[config(default = 256)]
+    #[config(default = 512)]
     pub batch_size: usize,
     #[config(default = 42)]
     pub seed: u64,
     #[config(default = 4)]
     pub num_workers: usize,
+    #[config(default = 25_000)]
+    pub n_dataset: usize,
+    #[config(default = 5)]
+    pub n_sample: usize,
     pub config_g: GeneratorConfig,
     pub config_d: DiscriminatorConfig,
     pub optimizer_g: AdamConfig,
     pub optimizer_d: AdamConfig,
-    #[config(default = 1e-3)]
+    #[config(default = 5e-4)]
     pub lr: f64,
 }
 
-fn create_artifact_dir(artifact_dir: &str) {
-    // Remove existing artifacts before to get an accurate learner summary
-    std::fs::remove_dir_all(artifact_dir).ok();
-    std::fs::create_dir_all(artifact_dir).ok();
-}
-
-pub fn run<B: AutodiffBackend>(device: B::Device) -> Result<(), Error> {
+pub fn run<B: AutodiffBackend, G: Geometry + 'static, D: Distribution<G>>(
+    device: B::Device,
+    sampler: D,
+) -> Result<(), Box<dyn std::error::Error>> {
     create_artifact_dir(ARTIFACT_DIR);
 
     println!("Loading config..");
     let z_dim = 8;
     let nb_hidden = 100;
+    let real_dim = G::N * 2;
     let mut rng = rand::rng();
 
-    let config_g = GeneratorConfig::new(z_dim, nb_hidden);
-    let config_d = DiscriminatorConfig::new(nb_hidden);
+    let config_g = GeneratorConfig::new(z_dim, nb_hidden, real_dim);
+    let config_d = DiscriminatorConfig::new(real_dim, nb_hidden);
     let optimizer_g = AdamConfig::new();
     let optimizer_d = AdamConfig::new();
     let config = TrainingConfig::new(config_g, config_d, optimizer_g, optimizer_d);
+
+    // store train config in artifact directory
+    config.save(format!("{ARTIFACT_DIR}/config.json"))?;
 
     println!("Init models..");
     let mut generator = config.config_g.init::<B>(&device);
@@ -62,55 +69,46 @@ pub fn run<B: AutodiffBackend>(device: B::Device) -> Result<(), Error> {
     let mut optim_d = config.optimizer_d.init();
 
     println!("Init data loaders..");
-    let batcher = TripletBatcher::default();
-    let dataset = TripletDataset::train();
-    let dataset_len = dataset.len();
-    let (x_gt, y_gt) = dataset.to_xy();
+    let dataset = Dataset::new(sampler, config.n_dataset);
+    let batcher = Batcher::from(&dataset);
     let dataloader = DataLoaderBuilder::new(batcher)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
+        .set_device(device.clone())
         .build(dataset);
-
-    println!("Starting training..");
 
     let mut log_epochs = Vec::with_capacity(config.epochs);
     let mut log_loss_g = Vec::with_capacity(config.epochs);
     let mut log_loss_d = Vec::with_capacity(config.epochs);
 
-    let mut snap_epochs: Vec<usize> = Vec::new();
-    let mut snap_x_g: Vec<Vec<f32>> = Vec::new();
-    let mut snap_y_g: Vec<Vec<f32>> = Vec::new();
+    let mut log_epochs_outlines = Vec::with_capacity(config.epochs);
+    let mut log_outlines = Vec::with_capacity(config.epochs);
 
+    println!("Starting training..");
     for epoch in 1..config.epochs + 1 {
-        let prev_epoch = epoch - 1;
-        if prev_epoch.is_multiple_of(10) {
-            // evaluate generator
-            println!("Sampling from generator..");
+        if (epoch - 1).is_multiple_of(5) {
+            // sample from generator
             let generator_valid = generator.valid();
-            let z = sample_z([dataset_len, z_dim], &mut rng, &device);
-            let generator_sample = generator_valid.forward(z);
-            let values: Vec<f32> = generator_sample.into_data().to_vec().unwrap();
-            let x_g: Vec<f32> = values.iter().step_by(2).copied().collect();
-            let y_g: Vec<f32> = values.iter().skip(1).step_by(2).copied().collect();
-
-            snap_epochs.push(prev_epoch);
-            snap_x_g.push(x_g);
-            snap_y_g.push(y_g);
-            plot_distr(
-                snap_epochs.clone(),
-                x_gt.clone(),
-                y_gt.clone(),
-                snap_x_g.clone(),
-                snap_y_g.clone(),
-            );
+            let z_valid = sample_z([config.n_sample, z_dim], &mut rng, &device);
+            let fake_valid = generator_valid.forward(z_valid);
+            let [_rows, cols] = fake_valid.dims();
+            let flat: Vec<f32> = fake_valid.into_data().to_vec().unwrap();
+            let outlines: Vec<Vec<f64>> = flat
+                .chunks_exact(cols)
+                .map(|row| row.iter().map(|&v| v as f64).collect())
+                .collect();
+            log_epochs_outlines.push(epoch - 1);
+            log_outlines.push(outlines);
+            plot_outlines(log_epochs_outlines.clone(), log_outlines.clone());
         }
 
+        let t = Instant::now();
         let (mut sum_g, mut n_g) = (0.0_f32, 0u32);
         let (mut sum_d, mut n_d) = (0.0_f32, 0u32);
 
         for real_batch in dataloader.iter() {
-            let real = real_batch.points;
+            let real = real_batch.tensor;
             let batch_size = real.dims()[0];
 
             // --- Train discriminator on the full batch ---
@@ -143,15 +141,18 @@ pub fn run<B: AutodiffBackend>(device: B::Device) -> Result<(), Error> {
 
         let avg_loss_g = sum_g / n_g.max(1) as f32;
         let avg_loss_d = sum_d / n_d.max(1) as f32;
+        let dt_train = t.elapsed();
+        let t = Instant::now();
 
         log_epochs.push(epoch);
         log_loss_g.push(avg_loss_g);
         log_loss_d.push(avg_loss_d);
         plot_loss(log_epochs.clone(), log_loss_g.clone(), log_loss_d.clone());
+        let dt_plot = t.elapsed();
 
         println!(
-            "[Train - Epoch {:>3}] avg_loss_g {:>8.3} | avg_loss_d {:>8.3}",
-            epoch, avg_loss_g, avg_loss_d,
+            "[Train - Epoch {:>3}] avg_loss_g {:>8.3} | avg_loss_d {:>8.3} | {:?} train | {:?} plot",
+            epoch, avg_loss_g, avg_loss_d, dt_train, dt_plot
         );
     }
 
