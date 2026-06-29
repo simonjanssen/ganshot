@@ -54,7 +54,7 @@ mod inner {
     impl Star {
         pub fn new(center: Coord2, size: f64, rotation: f64) -> Self {
             assert!(
-                (0.0..1.0).contains(&rotation),
+                (0.0..=1.0).contains(&rotation),
                 "rotation is out of range [0, 1]!"
             );
             assert!(size > 0.0, "size must be greater than 0!");
