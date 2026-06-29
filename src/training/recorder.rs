@@ -96,8 +96,7 @@ pub fn plot_loss(epochs: Vec<usize>, loss_g: Vec<f32>, loss_d: Vec<f32>) {
 /// `Vec` holds one outline's coordinates flattened as `(x1, y1, x2, y2, ...)`.
 /// Single-point outlines (length 2) of an epoch are merged into one marker
 /// trace; multi-point outlines are each drawn as their own closed line. A
-/// slider toggles which epoch's group of outlines is visible, mirroring
-/// [`plot_distr`].
+/// slider toggles which epoch's group of outlines is visible.
 pub fn plot_outlines(epochs: Vec<usize>, outlines: Vec<Vec<Vec<f64>>>) {
     let mut plot = Plot::new();
     let n = epochs.len();
