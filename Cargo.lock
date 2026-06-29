@@ -2826,7 +2826,6 @@ dependencies = [
 name = "ganshot"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "burn",
  "getrandom 0.4.3",
  "memmap2",

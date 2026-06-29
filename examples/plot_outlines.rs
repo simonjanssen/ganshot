@@ -1,11 +1,10 @@
-use anyhow::Error;
 use ganshot::{
     data::{commons::Geometry, stars::RandomStars},
     training::recorder::plot_outlines,
 };
 use rand_distr::Distribution;
 
-fn main() -> Result<(), Error> {
+fn main() {
     let mut rng = rand::rng();
 
     // Sample a handful of stars and flatten each outline into (x1, y1, x2, y2, ...).
@@ -22,6 +21,4 @@ fn main() -> Result<(), Error> {
 
     // Plot as a single epoch (epoch label 0).
     plot_outlines(vec![0], vec![outlines]);
-
-    Ok(())
 }

@@ -5,7 +5,6 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-anyhow = "1.0.103"
 burn = { version = "0.21.0", default-features = false, features = ["train"] }
 getrandom = "0.4.3"
 plotly = "0.14.1"

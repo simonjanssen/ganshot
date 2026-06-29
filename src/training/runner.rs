@@ -1,6 +1,5 @@
 use std::time::Instant;
 
-use anyhow::Error;
 use burn::{
     config::Config,
     data::dataloader::DataLoaderBuilder,
@@ -45,7 +44,7 @@ pub struct TrainingConfig {
 pub fn run<B: AutodiffBackend, G: Geometry + 'static, D: Distribution<G>>(
     device: B::Device,
     sampler: D,
-) -> Result<(), Error> {
+) -> Result<(), Box<dyn std::error::Error>> {
     create_artifact_dir(ARTIFACT_DIR);
 
     println!("Loading config..");
@@ -59,6 +58,9 @@ pub fn run<B: AutodiffBackend, G: Geometry + 'static, D: Distribution<G>>(
     let optimizer_g = AdamConfig::new();
     let optimizer_d = AdamConfig::new();
     let config = TrainingConfig::new(config_g, config_d, optimizer_g, optimizer_d);
+
+    // store train config in artifact directory
+    config.save(format!("{ARTIFACT_DIR}/config.json"))?;
 
     println!("Init models..");
     let mut generator = config.config_g.init::<B>(&device);
