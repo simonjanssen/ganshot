@@ -22,7 +22,7 @@ use crate::{
 
 #[derive(Config, Debug)]
 pub struct TrainingConfig {
-    #[config(default = 100)]
+    #[config(default = 250)]
     pub epochs: usize,
     #[config(default = 512)]
     pub batch_size: usize,
@@ -30,6 +30,10 @@ pub struct TrainingConfig {
     pub seed: u64,
     #[config(default = 4)]
     pub num_workers: usize,
+    #[config(default = 25_000)]
+    pub n_dataset: usize,
+    #[config(default = 5)]
+    pub n_sample: usize,
     pub config_g: GeneratorConfig,
     pub config_d: DiscriminatorConfig,
     pub optimizer_g: AdamConfig,
@@ -63,7 +67,7 @@ pub fn run<B: AutodiffBackend, G: Geometry + 'static, D: Distribution<G>>(
     let mut optim_d = config.optimizer_d.init();
 
     println!("Init data loaders..");
-    let dataset = Dataset::new(sampler, 10_000);
+    let dataset = Dataset::new(sampler, config.n_dataset);
     let batcher = Batcher::from(&dataset);
     let dataloader = DataLoaderBuilder::new(batcher)
         .batch_size(config.batch_size)
@@ -79,14 +83,12 @@ pub fn run<B: AutodiffBackend, G: Geometry + 'static, D: Distribution<G>>(
     let mut log_epochs_outlines = Vec::with_capacity(config.epochs);
     let mut log_outlines = Vec::with_capacity(config.epochs);
 
-    let n_sample_valid = 5;
-
     println!("Starting training..");
     for epoch in 1..config.epochs + 1 {
         if (epoch - 1).is_multiple_of(5) {
             // sample from generator
             let generator_valid = generator.valid();
-            let z_valid = sample_z([n_sample_valid, z_dim], &mut rng, &device);
+            let z_valid = sample_z([config.n_sample, z_dim], &mut rng, &device);
             let fake_valid = generator_valid.forward(z_valid);
             let [_rows, cols] = fake_valid.dims();
             let flat: Vec<f32> = fake_valid.into_data().to_vec().unwrap();
