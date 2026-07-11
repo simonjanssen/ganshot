@@ -6,9 +6,8 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 burn = { version = "0.21.0", default-features = false, features = ["train"] }
-getrandom = "0.4.3"
 plotly = "0.14.1"
-rand = "0.10.1"
+rand = "0.10.2"
 rand_distr = "0.6.0"
 
 # Apple Silicon: GPU via the Wgpu/Metal backend (see src/backend.rs).
