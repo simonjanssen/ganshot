@@ -100,7 +100,8 @@ pub fn run<B: AutodiffBackend, G: Geometry + 'static, D: Distribution<G>>(
                 .collect();
             log_epochs_outlines.push(epoch - 1);
             log_outlines.push(outlines);
-            plot_outlines(log_epochs_outlines.clone(), log_outlines.clone());
+            plot_outlines(log_epochs_outlines.clone(), log_outlines.clone())
+                .write_html(format!("{ARTIFACT_DIR}/generator_outlines.html"));
         }
 
         let t = Instant::now();

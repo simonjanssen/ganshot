@@ -1,5 +1,7 @@
 # ganshot
 
+[![Cargo Audit](https://github.com/simonjanssen/ganshot/actions/workflows/audit.yml/badge.svg)](https://github.com/simonjanssen/ganshot/actions/workflows/audit.yml)
+
 ## License
 
 Licensed under either of

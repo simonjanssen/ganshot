@@ -90,14 +90,16 @@ pub fn plot_loss(epochs: Vec<usize>, loss_g: Vec<f32>, loss_d: Vec<f32>) {
     plot.write_html(path_plot);
 }
 
-/// Plot generator outlines across epochs with a slider.
+/// Build a slider plot of generator outlines across epochs.
 ///
 /// `outlines` is indexed as `outlines[epoch][outline]`, where each innermost
 /// `Vec` holds one outline's coordinates flattened as `(x1, y1, x2, y2, ...)`.
 /// Single-point outlines (length 2) of an epoch are merged into one marker
 /// trace; multi-point outlines are each drawn as their own closed line. A
 /// slider toggles which epoch's group of outlines is visible.
-pub fn plot_outlines(epochs: Vec<usize>, outlines: Vec<Vec<Vec<f64>>>) {
+///
+/// Returns the [`Plot`] so the caller can persist it with its own path/format.
+pub fn plot_outlines(epochs: Vec<usize>, outlines: Vec<Vec<Vec<f64>>>) -> Plot {
     let mut plot = Plot::new();
     let n = epochs.len();
 
@@ -236,6 +238,5 @@ pub fn plot_outlines(epochs: Vec<usize>, outlines: Vec<Vec<Vec<f64>>>) {
         .sliders(vec![slider]);
     plot.set_layout(layout);
 
-    let path_plot = format!("{}/generator_outlines.html", ARTIFACT_DIR);
-    plot.write_html(path_plot);
+    plot
 }

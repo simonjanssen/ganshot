@@ -20,5 +20,5 @@ fn main() {
         .collect();
 
     // Plot as a single epoch (epoch label 0).
-    plot_outlines(vec![0], vec![outlines]);
+    plot_outlines(vec![0], vec![outlines]).write_html("./checkpoints/generator_outlines.html");
 }
