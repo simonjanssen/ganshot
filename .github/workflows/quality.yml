@@ -24,6 +24,23 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Guard against reusing a released version
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          new=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
+          old=$(git show "$base:Cargo.toml" | grep -m1 '^version' | cut -d'"' -f2)
+          if [ "$new" = "$old" ]; then
+            echo "Version unchanged ($new); nothing to check."
+            exit 0
+          fi
+          if git rev-parse "v$new" >/dev/null 2>&1; then
+            echo "::error::Cargo.toml version bumped to $new, but tag v$new already exists. Choose an unreleased version."
+            exit 1
+          fi
+          echo "Version bump $old -> $new is unreleased; ok to merge."
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
