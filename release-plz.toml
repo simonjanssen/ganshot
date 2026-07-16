@@ -1,0 +1,23 @@
+# release-plz configuration
+# https://release-plz.dev/docs/config
+#
+# release-plz keeps the `version` in Cargo.toml, the git tag, and the GitHub
+# release in sync: it opens a "release PR" that bumps the version (derived from
+# Conventional Commits) and updates CHANGELOG.md; merging that PR creates the
+# matching `vX.Y.Z` tag and GitHub release.
+
+[workspace]
+# Create GitHub releases (with auto-generated notes from the changelog).
+git_release_enable = true
+# Create the git tag. Keep the `vX.Y.Z` scheme used by the previous workflow.
+git_tag_enable = true
+git_tag_name = "v{{ version }}"
+git_release_name = "v{{ version }}"
+# Add a label to the release PR for easy filtering.
+pr_labels = ["release"]
+
+[[package]]
+name = "ganshot"
+# Do NOT publish to crates.io. release-plz still creates the git tag and the
+# GitHub release; it uses git tags (not the registry) to detect what to release.
+publish = false
