@@ -1,57 +1,88 @@
 name: Release
 
+# release-plz replaces the previous hand-rolled tag-and-release script.
+# On every push to `main` it:
+#   * `release-pr`  – opens/updates a PR that bumps the version in Cargo.toml
+#                     (from Conventional Commits) and updates CHANGELOG.md.
+#   * `release`     – once that PR is merged, creates the `vX.Y.Z` tag and the
+#                     GitHub release. Publishing to crates.io is disabled in
+#                     release-plz.toml (`publish = false`).
+#
+# A GitHub App token is used (instead of the default GITHUB_TOKEN) so that the
+# release PR and tags trigger the other workflows (e.g. Quality Gates). Add the
+# App id and private key as the `RELEASE_PLZ_APP_ID` and
+# `RELEASE_PLZ_APP_PRIVATE_KEY` repository secrets.
+
 on:
   push:
     branches: [main]
-    paths:
-      - 'Cargo.toml'
 
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
-permissions:
-  contents: write
-
 jobs:
-  release:
-    name: Tag and Release on version bump
+  release-plz-release:
+    name: Release-plz release
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
+      pull-requests: read
     steps:
+      - name: Generate GitHub App token
+        uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.RELEASE_PLZ_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
+
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: false
+          token: ${{ steps.app-token.outputs.token }}
 
-      - name: Read version from Cargo.toml
-        id: version
-        run: |
-          version=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
-          if [ -z "$version" ]; then
-            echo "Could not parse version from Cargo.toml" >&2
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache: true
 
-      - name: Check whether tag already exists
-        id: check
-        run: |
-          tag="v${{ steps.version.outputs.version }}"
-          if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "Tag $tag already exists; nothing to release."
-            echo "release=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Tag $tag is new; a release will be created."
-            echo "release=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Create GitHub release
-        if: steps.check.outputs.release == 'true'
+      - name: Run release-plz release
+        uses: release-plz/action@v0.5
+        with:
+          command: release
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          tag="v${{ steps.version.outputs.version }}"
-          gh release create "$tag" \
-            --target "${{ github.sha }}" \
-            --title "$tag" \
-            --generate-notes
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
+  release-plz-pr:
+    name: Release-plz PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: release-plz-pr-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Generate GitHub App token
+        uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.RELEASE_PLZ_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache: true
+
+      - name: Run release-plz release-pr
+        uses: release-plz/action@v0.5
+        with:
+          command: release-pr
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
