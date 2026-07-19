@@ -8,7 +8,6 @@ use burn::{
     record::CompactRecorder,
     tensor::{backend::AutodiffBackend, cast::ToElement},
 };
-use rand_distr::Distribution;
 
 use crate::{
     data::commons::{Batcher, Dataset, Geometry},
@@ -41,9 +40,9 @@ pub struct TrainingConfig {
     pub lr: f64,
 }
 
-pub fn run<B: AutodiffBackend, G: Geometry + 'static, D: Distribution<G>>(
+pub fn run<B: AutodiffBackend, G: Geometry + 'static, I: Iterator<Item = G>>(
     device: B::Device,
-    sampler: D,
+    iterator: I,
 ) -> Result<(), Box<dyn std::error::Error>> {
     create_artifact_dir(ARTIFACT_DIR);
 
@@ -69,7 +68,7 @@ pub fn run<B: AutodiffBackend, G: Geometry + 'static, D: Distribution<G>>(
     let mut optim_d = config.optimizer_d.init();
 
     println!("Init data loaders..");
-    let dataset = Dataset::new(sampler, config.n_dataset);
+    let dataset = Dataset::new(iterator, config.n_dataset);
     let batcher = Batcher::from(&dataset);
     let dataloader = DataLoaderBuilder::new(batcher)
         .batch_size(config.batch_size)

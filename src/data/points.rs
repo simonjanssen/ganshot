@@ -1,4 +1,4 @@
-use rand::RngExt;
+use rand::{RngExt, rngs::ThreadRng};
 use rand_distr::{Distribution, Normal};
 
 use crate::data::commons::Coord2;
@@ -6,7 +6,7 @@ use crate::data::commons::Coord2;
 const STD_DEV: f64 = 0.1;
 
 // --- Geometries ---
-mod inner {
+mod geometries {
     use crate::data::commons::{Coord2, Geometry};
 
     pub struct Point {
@@ -29,7 +29,7 @@ mod inner {
     }
 }
 
-pub use inner::Point;
+pub use geometries::Point;
 
 // --- Distributions ---
 pub struct Gaussian {
@@ -58,6 +58,7 @@ pub struct GaussianTriplet {
     g1: Gaussian,
     g2: Gaussian,
     g3: Gaussian,
+    rng: ThreadRng,
 }
 
 impl GaussianTriplet {
@@ -65,7 +66,20 @@ impl GaussianTriplet {
         let g1 = Gaussian::new(c1);
         let g2 = Gaussian::new(c2);
         let g3: Gaussian = Gaussian::new(c3);
-        Self { g1, g2, g3 }
+        let rng = rand::rng();
+        Self { g1, g2, g3, rng }
+    }
+}
+
+impl Iterator for GaussianTriplet {
+    type Item = Point;
+    fn next(&mut self) -> Option<Self::Item> {
+        let g = match self.rng.random_range(0..3) {
+            0 => &self.g1,
+            1 => &self.g2,
+            _ => &self.g3,
+        };
+        Some(g.sample(&mut self.rng))
     }
 }
 
@@ -101,8 +115,8 @@ mod tests {
 
         let (batch_size, seed, num_workers) = (64, 42, 4);
         let n = 10_000;
-        let sampler = GaussianTriplet::default();
-        let dataset = Dataset::new(sampler, n);
+        let iterator = GaussianTriplet::default();
+        let dataset = Dataset::new(iterator, n);
         let batcher = Batcher::from(&dataset);
 
         let dataloader = DataLoaderBuilder::new(batcher)

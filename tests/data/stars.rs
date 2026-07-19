@@ -102,7 +102,8 @@ fn iterate_batches() {
 
     let (batch_size, seed, num_workers) = (64, 42, 4);
     let n = 10_000;
-    let dataset = Dataset::new(RandomStars, n);
+    let stars = RandomStars::new();
+    let dataset = Dataset::new(stars, n);
     let batcher = Batcher::from(&dataset);
 
     let dataloader = DataLoaderBuilder::new(batcher)
