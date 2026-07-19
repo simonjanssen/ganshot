@@ -1,10 +1,10 @@
-use rand::RngExt;
+use rand::{RngExt, rngs::ThreadRng};
 use rand_distr::Distribution;
 
 // --- Geometries ---
 
 /// make it impossible to init Star except for ::new()
-mod inner {
+mod geometries {
     use crate::data::commons::{Coord2, Geometry};
 
     pub struct Star {
@@ -67,10 +67,38 @@ mod inner {
     }
 }
 
-pub use inner::Star;
+pub use geometries::Star;
 
 // --- Distributions ---
-pub struct RandomStars;
+pub struct RandomStars {
+    rng: ThreadRng,
+}
+
+impl RandomStars {
+    pub fn new() -> Self {
+        Self { rng: rand::rng() }
+    }
+}
+
+impl Default for RandomStars {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Iterator for RandomStars {
+    type Item = Star;
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(Star::new(
+            (
+                self.rng.random_range(-5.0..5.0),
+                self.rng.random_range(-5.0..5.0),
+            ),
+            self.rng.random_range(1.0..5.0),
+            self.rng.random_range(0.0..1.0),
+        ))
+    }
+}
 
 impl Distribution<Star> for RandomStars {
     fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Star {

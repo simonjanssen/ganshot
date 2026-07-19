@@ -6,6 +6,7 @@ use ganshot::{
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let device = select_device();
-    training::runner::run::<MyAutodiffBackend, _, _>(device, RandomStars)?;
+    let stars = RandomStars::new();
+    training::runner::run::<MyAutodiffBackend, _, _>(device, stars)?;
     Ok(())
 }

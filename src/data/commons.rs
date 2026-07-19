@@ -5,7 +5,6 @@ use burn::{
     data::{dataloader::batcher::Batcher as BurnBatcher, dataset::Dataset as BurnDataset},
     tensor::{TensorData, backend::Backend},
 };
-use rand_distr::Distribution;
 
 /// 2D-Coordinate
 pub type Coord2 = (f64, f64);
@@ -25,13 +24,8 @@ pub struct Dataset<G: Geometry> {
 }
 
 impl<G: Geometry> Dataset<G> {
-    pub fn new<D: Distribution<G>>(sampler: D, n: usize) -> Self {
-        let mut rng = rand::rng();
-        let dataset: Vec<_> = (&sampler)
-            .sample_iter(&mut rng)
-            .take(n)
-            .map(|g| g.to_outline())
-            .collect();
+    pub fn new<I: Iterator<Item = G>>(iterator: I, n: usize) -> Self {
+        let dataset: Vec<_> = iterator.take(n).map(|i| i.to_outline()).collect();
 
         assert!(!dataset.is_empty(), "empty dataset");
 
