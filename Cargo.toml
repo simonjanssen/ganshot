@@ -22,4 +22,3 @@ burn = { version = "0.21.0", features = ["metal", "wgpu"] }
 burn = { version = "0.21.0", features = ["flex"] }
 
 [dev-dependencies]
-matfile = "0.5.0"
