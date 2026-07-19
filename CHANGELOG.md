@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/simonjanssen/ganshot/compare/v0.1.1...v0.2.0) - 2026-07-19
+
+### Added
+
+- *(data)* HumanPose dataset ([#14](https://github.com/simonjanssen/ganshot/pull/14))
+
+### Fixed
+
+- *(release)* enable git-only mode ([#17](https://github.com/simonjanssen/ganshot/pull/17))
+- fix typo ([#9](https://github.com/simonjanssen/ganshot/pull/9))
+
+### Other
+
+- *(deps)* cargo update ([#13](https://github.com/simonjanssen/ganshot/pull/13))
+- release v0.1.1 ([#12](https://github.com/simonjanssen/ganshot/pull/12))
+- Replace custom release workflow with release-plz ([#11](https://github.com/simonjanssen/ganshot/pull/11))
+- Bump actions/checkout from 6 to 7 ([#10](https://github.com/simonjanssen/ganshot/pull/10))
+
 ## [0.1.1](https://github.com/simonjanssen/ganshot/releases/tag/v0.1.1) - 2026-07-16
 
 ### Added
