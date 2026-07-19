@@ -21,3 +21,9 @@ name = "ganshot"
 # Do NOT publish to crates.io. release-plz still creates the git tag and the
 # GitHub release; it uses git tags (not the registry) to detect what to release.
 publish = false
+# The crate is never published, so release-plz can't use crates.io as the
+# baseline for "the last released version" (it would find nothing and therefore
+# never bump the version). `git_only` tells release-plz to derive the latest
+# version from the git tags instead, which is what makes the version bump work
+# for an unpublished crate.
+git_only = true
