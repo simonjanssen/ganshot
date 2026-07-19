@@ -80,6 +80,12 @@ impl RandomStars {
     }
 }
 
+impl Default for RandomStars {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Iterator for RandomStars {
     type Item = Star;
     fn next(&mut self) -> Option<Self::Item> {

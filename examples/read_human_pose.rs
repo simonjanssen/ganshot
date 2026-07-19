@@ -11,6 +11,6 @@ fn main() -> Result<(), Error> {
     println!("poses: {}", human_poses.len());
     let dataset = Dataset::new(human_poses, 10_000);
     println!("dataset: {}", dataset.len());
-    let batcher = Batcher::from(&dataset);
+    let _batcher = Batcher::from(&dataset);
     Ok(())
 }

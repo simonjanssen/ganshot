@@ -88,6 +88,10 @@ impl HumanPoses {
     pub fn len(&self) -> usize {
         self.poses.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.poses.is_empty()
+    }
 }
 
 impl Iterator for HumanPoses {
