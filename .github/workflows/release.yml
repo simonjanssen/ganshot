@@ -17,6 +17,9 @@ on:
   push:
     branches: [main]
 
+# all permissions handled through dedicated GitHub App
+permissions: {}
+
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
@@ -25,12 +28,8 @@ jobs:
   release-plz-release:
     name: Release-plz release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: read
     steps:
-      - name: Generate GitHub App token
-        uses: actions/create-github-app-token@v3
+      - uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.RELEASE_PLZ_APP_ID }}
@@ -46,8 +45,7 @@ jobs:
         with:
           cache: true
 
-      - name: Run release-plz release
-        uses: release-plz/action@v0.5
+      - uses: release-plz/action@v0.5
         with:
           command: release
         env:
@@ -56,15 +54,11 @@ jobs:
   release-plz-pr:
     name: Release-plz PR
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     concurrency:
       group: release-plz-pr-${{ github.ref }}
       cancel-in-progress: false
     steps:
-      - name: Generate GitHub App token
-        uses: actions/create-github-app-token@v3
+      - uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.RELEASE_PLZ_APP_ID }}
@@ -80,8 +74,7 @@ jobs:
         with:
           cache: true
 
-      - name: Run release-plz release-pr
-        uses: release-plz/action@v0.5
+      - uses: release-plz/action@v0.5
         with:
           command: release-pr
         env:
