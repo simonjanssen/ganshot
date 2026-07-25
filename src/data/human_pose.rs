@@ -1,10 +1,11 @@
-use anyhow::Error;
 use rand::seq::SliceRandom;
 use std::{fs::File, io::BufReader, iter::FusedIterator, time::Instant};
 
 use serde::Deserialize;
 
+use crate::Result;
 use crate::data::commons::Geometry;
+use crate::error::LoadDatasetError;
 
 #[derive(Deserialize, Debug, Copy, Clone)]
 pub struct BodyJoint {
@@ -58,12 +59,21 @@ pub struct HumanPoses {
 }
 
 impl HumanPoses {
-    pub fn from_annotations_json(path: &str) -> Result<Self, Error> {
+    pub fn from_annotations_json(path: &str) -> Result<Self> {
         let t0 = Instant::now();
-        let file = File::open(path)?;
-        let reader = BufReader::new(file);
-        let annotations: Vec<Annotation> = serde_json::from_reader(reader)?;
+        let annotations: Vec<Annotation> = {
+            let file = File::open(path).map_err(|e| LoadDatasetError::Io {
+                path: path.into(),
+                source: e,
+            })?;
+            let reader = BufReader::new(file);
+            serde_json::from_reader(reader).map_err(|e| LoadDatasetError::Json {
+                path: path.into(),
+                source: e,
+            })
+        }?;
         println!("Parse annotations: {:?}", t0.elapsed());
+
         let t0 = Instant::now();
         let mut poses: Vec<HumanPose> = Vec::new();
         let mut invalid = 0u32;
