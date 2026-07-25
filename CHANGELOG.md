@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/simonjanssen/ganshot/compare/v0.2.0...v0.2.1) - 2026-07-25
+
+### Added
+
+- *(error)* custom error type ([#20](https://github.com/simonjanssen/ganshot/pull/20))
+
+### Fixed
+
+- *(security)* dedicated dependabot permission configuration ([#24](https://github.com/simonjanssen/ganshot/pull/24))
+
+### Other
+
+- replace app-id (deprecated) with client-id ([#25](https://github.com/simonjanssen/ganshot/pull/25))
+- *(deps)* bump the rust-minor-and-patch group with 2 updates
+- auto-merge minor/patch Dependabot PRs on passing checks ([#21](https://github.com/simonjanssen/ganshot/pull/21))
+
 ## [0.2.0](https://github.com/simonjanssen/ganshot/compare/v0.1.1...v0.2.0) - 2026-07-19
 
 ### Added
