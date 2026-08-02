@@ -6,6 +6,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 burn = { version = "0.21.0", default-features = false, features = ["train"] }
+event-listener = "5.4.2"
 plotly = "0.14.1"
 rand = "0.10.2"
 rand_distr = "0.6.0"
