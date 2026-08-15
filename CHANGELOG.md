@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2](https://github.com/simonjanssen/ganshot/compare/v0.2.1...v0.2.2) - 2026-08-15
+
+### Other
+
+- *(deps)* bump taiki-e/install-action from 2.85.8 to 2.85.12 ([#29](https://github.com/simonjanssen/ganshot/pull/29))
+- *(deps)* cargo update ([#31](https://github.com/simonjanssen/ganshot/pull/31))
+- *(deps)* bump taiki-e/install-action from 2.85.4 to 2.85.8 ([#28](https://github.com/simonjanssen/ganshot/pull/28))
+- *(deps)* bump taiki-e/install-action from 2 to 2.85.4 ([#26](https://github.com/simonjanssen/ganshot/pull/26))
+
 ## [0.2.1](https://github.com/simonjanssen/ganshot/compare/v0.2.0...v0.2.1) - 2026-07-25
 
 ### Added
