@@ -5,6 +5,7 @@ use burn::{
     data::{dataloader::batcher::Batcher as BurnBatcher, dataset::Dataset as BurnDataset},
     tensor::{TensorData, backend::Backend},
 };
+use plotly::Scatter;
 
 /// 2D-Coordinate
 pub type Coord2 = (f64, f64);
@@ -13,8 +14,25 @@ pub trait Geometry {
     const N: usize;
     type Outline: IntoIterator<Item = Coord2> + Copy + Send + Sync + std::fmt::Debug + 'static;
 
+    /// Create an uninit version of Self
+    fn empty() -> Self;
+
     /// Return the outline coordinates with wich one could draw the geometry's outer bounds (ordering matters)
     fn to_outline(&self) -> Self::Outline;
+
+    fn set_outline(&mut self, outline: Self::Outline);
+
+    fn from_outline(outline: Self::Outline) -> Self
+    where
+        Self: Sized,
+    {
+        let mut s = Self::empty();
+        s.set_outline(outline);
+        s
+    }
+
+    /// Draw
+    fn to_trace(&self) -> Box<Scatter<f64, f64>>;
 }
 
 pub struct Dataset<G: Geometry> {
@@ -108,4 +126,8 @@ impl<B: Backend, G: Geometry> BurnBatcher<B, G::Outline, Batch<B>> for Batcher<G
             .div_scalar(self.std);
         Batch { tensor: batched }
     }
+}
+
+pub trait Drawable {
+    fn to_trace(&self) -> Scatter<f64, f64>;
 }
