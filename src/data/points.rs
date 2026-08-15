@@ -7,24 +7,45 @@ const STD_DEV: f64 = 0.1;
 
 // --- Geometries ---
 mod geometries {
+    use plotly::{Scatter, common::Mode};
+
     use crate::data::commons::{Coord2, Geometry};
 
     pub struct Point {
-        center: Coord2,
+        center: Option<Coord2>,
     }
 
     impl Geometry for Point {
         const N: usize = 1;
         type Outline = [Coord2; Self::N];
 
+        fn empty() -> Self {
+            Self { center: None }
+        }
+
+        fn set_outline(&mut self, outline: Self::Outline) {
+            self.center = Some(outline[0])
+        }
+
         fn to_outline(&self) -> Self::Outline {
-            [self.center]
+            if let Some(center) = self.center {
+                [center]
+            } else {
+                panic!("Empty point doesn't have an outline!")
+            }
+        }
+
+        fn to_trace(&self) -> Box<plotly::Scatter<f64, f64>> {
+            let (x, y) = self.to_outline()[0];
+            Scatter::new([x].to_vec(), [y].to_vec()).mode(Mode::Markers)
         }
     }
 
     impl Point {
         pub fn new(center: Coord2) -> Self {
-            Self { center }
+            Self {
+                center: Some(center),
+            }
         }
     }
 }

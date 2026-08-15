@@ -5,17 +5,39 @@ use rand_distr::Distribution;
 
 /// make it impossible to init Star except for ::new()
 mod geometries {
+    use plotly::{Scatter, common::Mode};
+
     use crate::data::commons::{Coord2, Geometry};
 
-    pub struct Star {
+    const STAR_OUTLINE_LEN: usize = 10;
+    type StarOutline = [Coord2; STAR_OUTLINE_LEN];
+
+    struct StarDefinition {
         center: Coord2,
         size: f64,
         rotation: f64,
     }
 
+    enum InnerRepr {
+        Definition(StarDefinition),
+        Outline(StarOutline),
+    }
+
+    pub struct Star {
+        repr: Option<InnerRepr>,
+    }
+
     impl Geometry for Star {
-        const N: usize = 10;
-        type Outline = [Coord2; Self::N];
+        const N: usize = STAR_OUTLINE_LEN;
+        type Outline = StarOutline;
+
+        fn empty() -> Self {
+            Self { repr: None }
+        }
+
+        fn set_outline(&mut self, outline: Self::Outline) {
+            self.repr = Some(InnerRepr::Outline(outline))
+        }
 
         /// Return the outline coordinates with wich one could draw the star's outer bounds
         /// This is a sequence of 10 coordinates (5 star tips, 5 star valleys) returned in counter-clockwise order
@@ -25,29 +47,53 @@ mod geometries {
         /// With `rotation == 0.0` the first tip points straight up along the +y axis; `rotation` is
         /// measured in turns (a full counter-clockwise revolution is `1.0`).
         fn to_outline(&self) -> Self::Outline {
-            // Classic pentagram inner/outer radius ratio: sin(18°) / sin(54°).
-            let inner_ratio = (18.0_f64.to_radians()).sin() / (54.0_f64.to_radians()).sin();
-            let inner_radius = self.size * inner_ratio;
+            match &self.repr {
+                Some(InnerRepr::Outline(outline)) => *outline,
+                Some(InnerRepr::Definition(definition)) => {
+                    // Classic pentagram inner/outer radius ratio: sin(18°) / sin(54°).
+                    let inner_ratio = (18.0_f64.to_radians()).sin() / (54.0_f64.to_radians()).sin();
+                    let inner_radius = definition.size * inner_ratio;
 
-            // First tip points up (+y) at rotation 0; `rotation` turns are added counter-clockwise.
-            let base = std::f64::consts::FRAC_PI_2 + self.rotation * std::f64::consts::TAU;
-            let step = std::f64::consts::TAU / 5.0;
-            let half_step = step / 2.0;
+                    // First tip points up (+y) at rotation 0; `rotation` turns are added counter-clockwise.
+                    let base =
+                        std::f64::consts::FRAC_PI_2 + definition.rotation * std::f64::consts::TAU;
+                    let step = std::f64::consts::TAU / 5.0;
+                    let half_step = step / 2.0;
 
-            let mut outline = [(0.0, 0.0); 10];
-            for i in 0..5 {
-                let tip_angle = base + i as f64 * step;
-                let valley_angle = tip_angle + half_step;
-                outline[2 * i] = (
-                    self.center.0 + self.size * tip_angle.cos(),
-                    self.center.1 + self.size * tip_angle.sin(),
-                );
-                outline[2 * i + 1] = (
-                    self.center.0 + inner_radius * valley_angle.cos(),
-                    self.center.1 + inner_radius * valley_angle.sin(),
-                );
+                    let mut outline = [(0.0, 0.0); 10];
+                    for i in 0..5 {
+                        let tip_angle = base + i as f64 * step;
+                        let valley_angle = tip_angle + half_step;
+                        outline[2 * i] = (
+                            definition.center.0 + definition.size * tip_angle.cos(),
+                            definition.center.1 + definition.size * tip_angle.sin(),
+                        );
+                        outline[2 * i + 1] = (
+                            definition.center.0 + inner_radius * valley_angle.cos(),
+                            definition.center.1 + inner_radius * valley_angle.sin(),
+                        );
+                    }
+                    outline
+                }
+                None => panic!("Empty star doesn't have an outline!"),
             }
-            outline
+        }
+
+        fn to_trace(&self) -> Box<plotly::Scatter<f64, f64>> {
+            let outline = self.to_outline();
+            let mut xs = Vec::with_capacity(outline.len() / 2 + 1);
+            let mut ys = Vec::with_capacity(outline.len() / 2 + 1);
+            for (x, y) in outline {
+                xs.push(x);
+                ys.push(y);
+            }
+            // Close the outline by repeating the first point so the edge between
+            // the last and first vertex is drawn.
+            xs.push(xs[0]);
+            ys.push(ys[0]);
+
+            let trace = Scatter::new(xs, ys).mode(Mode::Lines);
+            trace
         }
     }
 
@@ -59,9 +105,11 @@ mod geometries {
             );
             assert!(size > 0.0, "size must be greater than 0!");
             Self {
-                center,
-                size,
-                rotation,
+                repr: Some(InnerRepr::Definition(StarDefinition {
+                    center,
+                    size,
+                    rotation,
+                })),
             }
         }
     }
