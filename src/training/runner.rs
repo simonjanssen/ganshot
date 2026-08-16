@@ -11,8 +11,8 @@ use std::time::Instant;
 use crate::{
     data::commons::{Batcher, Dataset, Geometry, plot_2x3},
     models::{
-        discriminator::DiscriminatorConfig,
-        generator::{GeneratorConfig, sample_z},
+        gan::discriminator::DiscriminatorConfig,
+        gan::generator::{GeneratorConfig, sample_z},
     },
     training::recorder::{ARTIFACT_DIR, create_artifact_dir, plot_loss},
 };

@@ -1,7 +1,7 @@
 use burn::tensor::Shape;
 use ganshot::{
     backend::{MyAutodiffBackend, select_device},
-    models::generator::{GeneratorConfig, sample_z, sample_z_fixed},
+    models::gan::generator::{GeneratorConfig, sample_z, sample_z_fixed},
 };
 use rand::{SeedableRng, rngs::StdRng};
 

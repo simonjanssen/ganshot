@@ -1,7 +1,7 @@
 use burn::{Tensor, tensor::Shape};
 use ganshot::{
     backend::{MyAutodiffBackend, select_device},
-    models::discriminator::DiscriminatorConfig,
+    models::gan::discriminator::DiscriminatorConfig,
 };
 
 #[test]

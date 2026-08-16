@@ -1,4 +1,4 @@
-#[path = "models/discriminator.rs"]
+#[path = "models/gan/discriminator.rs"]
 mod discriminator;
-#[path = "models/generator.rs"]
+#[path = "models/gan/generator.rs"]
 mod generator;

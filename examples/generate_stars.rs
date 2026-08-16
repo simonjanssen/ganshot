@@ -8,7 +8,7 @@ use ganshot::{
         commons::{Geometry, plot_2x3},
         stars::Star,
     },
-    models::generator::{GeneratorConfig, sample_z_fixed},
+    models::gan::generator::{GeneratorConfig, sample_z_fixed},
 };
 use rand::{SeedableRng, rngs::StdRng};
 
