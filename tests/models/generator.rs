@@ -9,8 +9,8 @@ use rand::{SeedableRng, rngs::StdRng};
 fn generator_forward_pass() {
     let device = select_device();
 
-    let (z_dim, nb_hidden, batch_size, real_dim) = (8, 100, 64, 2);
-    let config = GeneratorConfig::new(z_dim, nb_hidden, real_dim);
+    let (z_dim, h1_dim, h2_dim, batch_size, real_dim) = (8, 10, 100, 64, 2);
+    let config = GeneratorConfig::new(z_dim, h1_dim, h2_dim, real_dim);
     let generator = config.init::<MyAutodiffBackend>(&device);
 
     let mut rng = rand::rng();

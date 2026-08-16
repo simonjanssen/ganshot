@@ -11,6 +11,8 @@ pub struct Discriminator<B: Backend> {
     linear1: Linear<B>,
     relu1: Relu,
     linear2: Linear<B>,
+    relu2: Relu,
+    linear3: Linear<B>,
     sigmoid1: Sigmoid,
 }
 
@@ -19,6 +21,8 @@ impl<B: Backend> Discriminator<B> {
         let x = self.linear1.forward(x);
         let x = self.relu1.forward(x);
         let x = self.linear2.forward(x);
+        let x = self.relu2.forward(x);
+        let x = self.linear3.forward(x);
         self.sigmoid1.forward(x)
     }
 }
@@ -26,15 +30,18 @@ impl<B: Backend> Discriminator<B> {
 #[derive(Config, Debug)]
 pub struct DiscriminatorConfig {
     input_dim: usize,
-    nb_hidden: usize,
+    h1_dim: usize,
+    h2_dim: usize,
 }
 
 impl DiscriminatorConfig {
     pub fn init<B: Backend>(&self, device: &B::Device) -> Discriminator<B> {
         Discriminator {
-            linear1: LinearConfig::new(self.input_dim, self.nb_hidden).init(device),
+            linear1: LinearConfig::new(self.input_dim, self.h1_dim).init(device),
             relu1: Relu::new(),
-            linear2: LinearConfig::new(self.nb_hidden, 1).init(device),
+            linear2: LinearConfig::new(self.h1_dim, self.h2_dim).init(device),
+            relu2: Relu::new(),
+            linear3: LinearConfig::new(self.h2_dim, 1).init(device),
             sigmoid1: Sigmoid::new(),
         }
     }

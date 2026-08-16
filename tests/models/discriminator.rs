@@ -8,8 +8,8 @@ use ganshot::{
 fn discriminator_forward_pass() {
     let device = select_device();
 
-    let (nb_hidden, batch_size, real_dim) = (100, 64, 2);
-    let config = DiscriminatorConfig::new(real_dim, nb_hidden);
+    let (h1_dim, h2_dim, batch_size, real_dim) = (100, 10, 64, 2);
+    let config = DiscriminatorConfig::new(real_dim, h1_dim, h2_dim);
     let discriminator = config.init::<MyAutodiffBackend>(&device);
 
     let x = Tensor::empty([batch_size, 2], &device);
