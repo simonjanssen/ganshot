@@ -35,9 +35,9 @@ mod geometries {
             }
         }
 
-        fn to_trace(&self) -> Box<plotly::Scatter<f64, f64>> {
+        fn traces(&self) -> Vec<Box<Scatter<f64, f64>>> {
             let (x, y) = self.to_outline()[0];
-            Scatter::new([x].to_vec(), [y].to_vec()).mode(Mode::Markers)
+            vec![Scatter::new(vec![x], vec![y]).mode(Mode::Markers)]
         }
     }
 

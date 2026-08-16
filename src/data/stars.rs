@@ -79,10 +79,10 @@ mod geometries {
             }
         }
 
-        fn to_trace(&self) -> Box<plotly::Scatter<f64, f64>> {
+        fn traces(&self) -> Vec<Box<Scatter<f64, f64>>> {
             let outline = self.to_outline();
-            let mut xs = Vec::with_capacity(outline.len() / 2 + 1);
-            let mut ys = Vec::with_capacity(outline.len() / 2 + 1);
+            let mut xs = Vec::with_capacity(outline.len() + 1);
+            let mut ys = Vec::with_capacity(outline.len() + 1);
             for (x, y) in outline {
                 xs.push(x);
                 ys.push(y);
@@ -92,8 +92,7 @@ mod geometries {
             xs.push(xs[0]);
             ys.push(ys[0]);
 
-            let trace = Scatter::new(xs, ys).mode(Mode::Lines);
-            trace
+            vec![Scatter::new(xs, ys).mode(Mode::Lines)]
         }
     }
 

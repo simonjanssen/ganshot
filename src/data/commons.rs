@@ -5,7 +5,10 @@ use burn::{
     data::{dataloader::batcher::Batcher as BurnBatcher, dataset::Dataset as BurnDataset},
     tensor::{TensorData, backend::Backend},
 };
-use plotly::Scatter;
+use plotly::{
+    Layout, Plot, Scatter,
+    layout::{Axis, GridPattern, LayoutGrid},
+};
 
 /// 2D-Coordinate
 pub type Coord2 = (f64, f64);
@@ -31,8 +34,15 @@ pub trait Geometry {
         s
     }
 
-    /// Draw
-    fn to_trace(&self) -> Box<Scatter<f64, f64>>;
+    fn traces(&self) -> Vec<Box<Scatter<f64, f64>>>;
+
+    fn plot(&self) -> Plot {
+        let mut plot = Plot::new();
+        for trace in self.traces() {
+            plot.add_trace(trace);
+        }
+        plot
+    }
 }
 
 pub struct Dataset<G: Geometry> {
@@ -128,6 +138,59 @@ impl<B: Backend, G: Geometry> BurnBatcher<B, G::Outline, Batch<B>> for Batcher<G
     }
 }
 
-pub trait Drawable {
-    fn to_trace(&self) -> Scatter<f64, f64>;
+/// Plot a 2x3 grid of 6 Geometries
+pub fn plot_2x3<G: Geometry>(poses: &[G; 6]) -> Plot {
+    let mut plot = Plot::new();
+    let (rows, cols) = (2, 3);
+
+    let mut layout = Layout::new()
+        .show_legend(false)
+        .width(400 * cols)
+        .height(400 * rows)
+        .grid(
+            LayoutGrid::new()
+                .rows(rows)
+                .columns(cols)
+                .pattern(GridPattern::Independent),
+        );
+
+    for (i, pose) in poses.iter().enumerate() {
+        // plotly names the first subplot's axes "x"/"y" and the rest "x2".."x6"
+        let suffix = if i == 0 {
+            String::new()
+        } else {
+            (i + 1).to_string()
+        };
+        let (x_id, y_id) = (format!("x{suffix}"), format!("y{suffix}"));
+
+        for trace in pose.traces() {
+            plot.add_trace(trace.x_axis(&x_id).y_axis(&y_id));
+        }
+
+        let (x_axis, y_axis) = {
+            // rectangular frame, no grid/ticks/labels
+            let bare_axis = || {
+                Axis::new()
+                    .show_grid(false)
+                    .zero_line(false)
+                    .show_tick_labels(false)
+                    .show_line(true)
+                    .mirror(true)
+            };
+
+            (bare_axis(), bare_axis().scale_ratio(1.0))
+        };
+        let y_axis = y_axis.scale_anchor(&x_id);
+        layout = match i {
+            0 => layout.x_axis(x_axis).y_axis(y_axis),
+            1 => layout.x_axis2(x_axis).y_axis2(y_axis),
+            2 => layout.x_axis3(x_axis).y_axis3(y_axis),
+            3 => layout.x_axis4(x_axis).y_axis4(y_axis),
+            4 => layout.x_axis5(x_axis).y_axis5(y_axis),
+            _ => layout.x_axis6(x_axis).y_axis6(y_axis),
+        };
+    }
+
+    plot.set_layout(layout);
+    plot
 }
