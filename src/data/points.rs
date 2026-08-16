@@ -11,6 +11,7 @@ mod geometries {
 
     use crate::data::commons::{Coord2, Geometry};
 
+    #[derive(Debug)]
     pub struct Point {
         center: Option<Coord2>,
     }
@@ -33,6 +34,12 @@ mod geometries {
             } else {
                 panic!("Empty point doesn't have an outline!")
             }
+        }
+
+        fn from_vec(v: Vec<f64>) -> Self {
+            let p: Vec<(f64, f64)> = v.chunks(2).map(|c| (c[0], c[1])).collect();
+            let p = p.try_into().unwrap();
+            Self::from_outline(p)
         }
 
         fn traces(&self) -> Vec<Box<Scatter<f64, f64>>> {

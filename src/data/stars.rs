@@ -12,17 +12,20 @@ mod geometries {
     const STAR_OUTLINE_LEN: usize = 10;
     type StarOutline = [Coord2; STAR_OUTLINE_LEN];
 
+    #[derive(Debug)]
     struct StarDefinition {
         center: Coord2,
         size: f64,
         rotation: f64,
     }
 
+    #[derive(Debug)]
     enum InnerRepr {
         Definition(StarDefinition),
         Outline(StarOutline),
     }
 
+    #[derive(Debug)]
     pub struct Star {
         repr: Option<InnerRepr>,
     }
@@ -37,6 +40,12 @@ mod geometries {
 
         fn set_outline(&mut self, outline: Self::Outline) {
             self.repr = Some(InnerRepr::Outline(outline))
+        }
+
+        fn from_vec(v: Vec<f64>) -> Self {
+            let p: Vec<(f64, f64)> = v.chunks(2).map(|c| (c[0], c[1])).collect();
+            let p = p.try_into().unwrap();
+            Self::from_outline(p)
         }
 
         /// Return the outline coordinates with wich one could draw the star's outer bounds

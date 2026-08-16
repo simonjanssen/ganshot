@@ -4,9 +4,11 @@ use burn::{
 };
 use ganshot::{
     backend::{MyAutodiffBackend, select_device},
-    data::{commons::Geometry, stars::Star},
+    data::{
+        commons::{Geometry, plot_2x3},
+        stars::Star,
+    },
     models::generator::{GeneratorConfig, sample_z_fixed},
-    training::recorder::plot_outlines,
 };
 use rand::{SeedableRng, rngs::StdRng};
 
@@ -19,10 +21,11 @@ fn main() {
     let recorder = CompactRecorder::new();
 
     let z_dim = 8;
-    let nb_hidden = 100;
+    let h1_dim = 32;
+    let h2_dim = 128;
     // Must match the trained model: real_dim = Star::N * 2 (x, y per outline point).
     let real_dim = Star::N * 2;
-    let config = GeneratorConfig::new(z_dim, nb_hidden, real_dim);
+    let config = GeneratorConfig::new(z_dim, h1_dim, h2_dim, real_dim);
 
     let mut generator = config.init::<MyAutodiffBackend>(&device);
     generator = generator
@@ -47,7 +50,7 @@ fn main() {
         fixed_dim < z_dim,
         "--dim ({fixed_dim}) must be < z_dim ({z_dim})"
     );
-    let fixed_steps = 101;
+    let fixed_steps = 6;
     let z_valid = sample_z_fixed(z_dim, fixed_dim, fixed_steps, &mut rng, &device);
 
     let fake_valid = generator_valid.forward(z_valid);
@@ -58,11 +61,8 @@ fn main() {
         .map(|row| row.iter().map(|&v| v as f64).collect())
         .collect();
 
-    // Each sweep step becomes its own slider position holding a single outline,
-    // so scrubbing the slider shows how the star morphs along latent dim `fixed_dim`.
-    let steps: Vec<usize> = (0..fixed_steps).collect();
-    let grouped: Vec<Vec<Vec<f64>>> = outlines.into_iter().map(|outline| vec![outline]).collect();
-    plot_outlines(steps, grouped).write_html(format!(
-        "./checkpoints/generator_outlines_dim{fixed_dim}.html"
-    ));
+    let geometries: Vec<_> = outlines.into_iter().map(|v| Star::from_vec(v)).collect();
+    let geometries: [Star; 6] = geometries.try_into().expect("Not 6 geometries!");
+    let plot = plot_2x3(&geometries);
+    plot.write_html("tmp/generate_stars.html");
 }

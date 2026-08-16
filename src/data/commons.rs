@@ -34,6 +34,8 @@ pub trait Geometry {
         s
     }
 
+    fn from_vec(v: Vec<f64>) -> Self;
+
     fn traces(&self) -> Vec<Box<Scatter<f64, f64>>>;
 
     fn plot(&self) -> Plot {
@@ -139,7 +141,7 @@ impl<B: Backend, G: Geometry> BurnBatcher<B, G::Outline, Batch<B>> for Batcher<G
 }
 
 /// Plot a 2x3 grid of 6 Geometries
-pub fn plot_2x3<G: Geometry>(poses: &[G; 6]) -> Plot {
+pub fn plot_2x3<G: Geometry>(geometries: &[G; 6]) -> Plot {
     let mut plot = Plot::new();
     let (rows, cols) = (2, 3);
 
@@ -154,7 +156,7 @@ pub fn plot_2x3<G: Geometry>(poses: &[G; 6]) -> Plot {
                 .pattern(GridPattern::Independent),
         );
 
-    for (i, pose) in poses.iter().enumerate() {
+    for (i, geometry) in geometries.iter().enumerate() {
         // plotly names the first subplot's axes "x"/"y" and the rest "x2".."x6"
         let suffix = if i == 0 {
             String::new()
@@ -163,7 +165,7 @@ pub fn plot_2x3<G: Geometry>(poses: &[G; 6]) -> Plot {
         };
         let (x_id, y_id) = (format!("x{suffix}"), format!("y{suffix}"));
 
-        for trace in pose.traces() {
+        for trace in geometry.traces() {
             plot.add_trace(trace.x_axis(&x_id).y_axis(&y_id));
         }
 

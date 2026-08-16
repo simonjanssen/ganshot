@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use burn::{
     config::Config,
     data::dataloader::DataLoaderBuilder,
@@ -8,21 +6,22 @@ use burn::{
     record::CompactRecorder,
     tensor::{backend::AutodiffBackend, cast::ToElement},
 };
+use std::time::Instant;
 
 use crate::{
-    data::commons::{Batcher, Dataset, Geometry},
+    data::commons::{Batcher, Dataset, Geometry, plot_2x3},
     models::{
         discriminator::DiscriminatorConfig,
         generator::{GeneratorConfig, sample_z},
     },
-    training::recorder::{ARTIFACT_DIR, create_artifact_dir, plot_loss, plot_outlines},
+    training::recorder::{ARTIFACT_DIR, create_artifact_dir, plot_loss},
 };
 
 #[derive(Config, Debug)]
 pub struct TrainingConfig {
-    #[config(default = 250)]
+    #[config(default = 1_000)]
     pub epochs: usize,
-    #[config(default = 512)]
+    #[config(default = 2_048)]
     pub batch_size: usize,
     #[config(default = 42)]
     pub seed: u64,
@@ -30,17 +29,17 @@ pub struct TrainingConfig {
     pub num_workers: usize,
     #[config(default = 25_000)]
     pub n_dataset: usize,
-    #[config(default = 5)]
+    #[config(default = 6)]
     pub n_sample: usize,
     pub config_g: GeneratorConfig,
     pub config_d: DiscriminatorConfig,
     pub optimizer_g: AdamConfig,
     pub optimizer_d: AdamConfig,
-    #[config(default = 5e-4)]
+    #[config(default = 1e-4)]
     pub lr: f64,
 }
 
-pub fn run<B: AutodiffBackend, G: Geometry + 'static, I: Iterator<Item = G>>(
+pub fn run<B: AutodiffBackend, G: Geometry + 'static + std::fmt::Debug, I: Iterator<Item = G>>(
     device: B::Device,
     iterator: I,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -48,12 +47,13 @@ pub fn run<B: AutodiffBackend, G: Geometry + 'static, I: Iterator<Item = G>>(
 
     println!("Loading config..");
     let z_dim = 8;
-    let nb_hidden = 100;
+    let h1_dim = 16;
+    let h2_dim = 128;
     let real_dim = G::N * 2;
     let mut rng = rand::rng();
 
-    let config_g = GeneratorConfig::new(z_dim, nb_hidden, real_dim);
-    let config_d = DiscriminatorConfig::new(real_dim, nb_hidden);
+    let config_g = GeneratorConfig::new(z_dim, h1_dim, h2_dim, real_dim); /* decoder-like: h1-dim (smaller) -> h2-dim */
+    let config_d = DiscriminatorConfig::new(real_dim, h2_dim, h1_dim); /* encoder-like: h2-dim (larger) -> h1-dim */
     let optimizer_g = AdamConfig::new();
     let optimizer_d = AdamConfig::new();
     let config = TrainingConfig::new(config_g, config_d, optimizer_g, optimizer_d);
@@ -81,12 +81,12 @@ pub fn run<B: AutodiffBackend, G: Geometry + 'static, I: Iterator<Item = G>>(
     let mut log_loss_g = Vec::with_capacity(config.epochs);
     let mut log_loss_d = Vec::with_capacity(config.epochs);
 
-    let mut log_epochs_outlines = Vec::with_capacity(config.epochs);
-    let mut log_outlines = Vec::with_capacity(config.epochs);
+    // let mut log_epochs_outlines = Vec::with_capacity(config.epochs);
+    // let mut log_outlines = Vec::with_capacity(config.epochs);
 
     println!("Starting training..");
-    for epoch in 1..config.epochs + 1 {
-        if (epoch - 1).is_multiple_of(5) {
+    for epoch in 0..config.epochs {
+        if epoch.is_multiple_of(25) || epoch == config.epochs - 1 {
             // sample from generator
             let generator_valid = generator.valid();
             let z_valid = sample_z([config.n_sample, z_dim], &mut rng, &device);
@@ -97,10 +97,16 @@ pub fn run<B: AutodiffBackend, G: Geometry + 'static, I: Iterator<Item = G>>(
                 .chunks_exact(cols)
                 .map(|row| row.iter().map(|&v| v as f64).collect())
                 .collect();
-            log_epochs_outlines.push(epoch - 1);
-            log_outlines.push(outlines);
-            plot_outlines(log_epochs_outlines.clone(), log_outlines.clone())
-                .write_html(format!("{ARTIFACT_DIR}/generator_outlines.html"));
+            let geometries: Vec<_> = outlines.into_iter().map(|v| G::from_vec(v)).collect();
+            let geometries: [G; 6] = geometries.try_into().expect("Not 6 geometries!");
+            let plot = plot_2x3(&geometries);
+            plot.write_html(format!("checkpoints/epoch_{:03}.html", epoch));
+            plot.write_html("checkpoints/epoch_latest.html");
+
+            // log_epochs_outlines.push(epoch - 1);
+            // log_outlines.push(outlines);
+            // plot_outlines(log_epochs_outlines.clone(), log_outlines.clone())
+            //     .write_html(format!("{ARTIFACT_DIR}/generator_outlines.html"));
         }
 
         let t = Instant::now();
@@ -144,7 +150,7 @@ pub fn run<B: AutodiffBackend, G: Geometry + 'static, I: Iterator<Item = G>>(
         let dt_train = t.elapsed();
         let t = Instant::now();
 
-        log_epochs.push(epoch);
+        log_epochs.push(epoch + 1);
         log_loss_g.push(avg_loss_g);
         log_loss_d.push(avg_loss_d);
         plot_loss(log_epochs.clone(), log_loss_g.clone(), log_loss_d.clone());
@@ -152,7 +158,11 @@ pub fn run<B: AutodiffBackend, G: Geometry + 'static, I: Iterator<Item = G>>(
 
         println!(
             "[Train - Epoch {:>3}] avg_loss_g {:>8.3} | avg_loss_d {:>8.3} | {:?} train | {:?} plot",
-            epoch, avg_loss_g, avg_loss_d, dt_train, dt_plot
+            epoch + 1,
+            avg_loss_g,
+            avg_loss_d,
+            dt_train,
+            dt_plot
         );
     }
 
