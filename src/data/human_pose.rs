@@ -27,12 +27,27 @@ impl From<BodyJoint> for Coord2 {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 struct Person {
     points: Option<Vec<BodyJoint>>,
 }
 
 impl Person {
+    // Return a x-flipped version of self
+    pub fn flipped_x(&self) -> Self {
+        let mut flipped = self.clone();
+        if let Some(joints) = &mut flipped.points {
+            let x_min = joints.iter().map(|j| j.x).fold(f64::INFINITY, f64::min);
+            let x_max = joints.iter().map(|j| j.x).fold(f64::NEG_INFINITY, f64::max);
+            let x_diff = x_max - x_min;
+            for joint in joints.iter_mut() {
+                joint.x = x_diff - joint.x;
+            }
+        }
+        flipped
+    }
+
+    // Flip along the y-axis
     pub fn flip_y(&mut self) {
         if let Some(joints) = &mut self.points {
             let y_min = joints.iter().map(|j| j.y).fold(f64::INFINITY, f64::min);
@@ -59,7 +74,7 @@ mod geometries {
         human_pose::BodyJoint,
     };
 
-    #[derive(Clone, Copy)]
+    #[derive(Clone, Copy, Debug)]
     struct HumanPoseRepr {
         r_ankle: BodyJoint,
         r_knee: BodyJoint,
@@ -102,29 +117,30 @@ mod geometries {
         }
     }
 
-    impl Into<[BodyJoint; 16]> for HumanPoseRepr {
-        fn into(self) -> [BodyJoint; 16] {
+    impl From<HumanPoseRepr> for [BodyJoint; 16] {
+        fn from(value: HumanPoseRepr) -> Self {
             [
-                self.r_ankle,
-                self.r_knee,
-                self.r_hip,
-                self.l_hip,
-                self.l_knee,
-                self.l_ankle,
-                self.pelvis,
-                self.thorax,
-                self.upper_neck,
-                self.head_top,
-                self.r_wrist,
-                self.r_elbow,
-                self.r_shoulder,
-                self.l_shoulder,
-                self.l_elbow,
-                self.l_wrist,
+                value.r_ankle,
+                value.r_knee,
+                value.r_hip,
+                value.l_hip,
+                value.l_knee,
+                value.l_ankle,
+                value.pelvis,
+                value.thorax,
+                value.upper_neck,
+                value.head_top,
+                value.r_wrist,
+                value.r_elbow,
+                value.r_shoulder,
+                value.l_shoulder,
+                value.l_elbow,
+                value.l_wrist,
             ]
         }
     }
 
+    #[derive(Debug)]
     pub struct HumanPose {
         repr: Option<HumanPoseRepr>,
     }
@@ -150,6 +166,12 @@ mod geometries {
             } else {
                 panic!("Empty pose doesn't have an outline!")
             }
+        }
+
+        fn from_vec(v: Vec<f64>) -> Self {
+            let p: Vec<(f64, f64)> = v.chunks(2).map(|c| (c[0], c[1])).collect();
+            let p = p.try_into().unwrap();
+            Self::from_outline(p)
         }
 
         fn traces(&self) -> Vec<Box<Scatter<f64, f64>>> {
@@ -256,12 +278,15 @@ impl HumanPoses {
         for annotation in annotations {
             for mut person in annotation.people {
                 person.flip_y();
-                if let Some(mut points) = person.points {
-                    if points.len() == HumanPose::N {
-                        points.sort_by_key(|p| p.id);
-                        poses.push(HumanPose::new(points.try_into().unwrap()));
-                    } else {
-                        invalid += 1
+                let flipped = person.flipped_x(); /* a very basic augmentation: y-axis symmetry */
+                for person in [person, flipped] {
+                    if let Some(mut points) = person.points {
+                        if points.len() == HumanPose::N {
+                            points.sort_by_key(|p| p.id);
+                            poses.push(HumanPose::new(points.try_into().unwrap()));
+                        } else {
+                            invalid += 1
+                        }
                     }
                 }
             }
